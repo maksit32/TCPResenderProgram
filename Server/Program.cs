@@ -12,7 +12,7 @@ IPAddress localAddr = IPAddress.Parse("192.168.0.12");
 TcpListener listen = new TcpListener(localAddr, 4572);
 
 //массив клиентов
-List<TcpClient> Clients = new List<TcpClient>();
+List<TcpClient> clients = new List<TcpClient>();
 //индекс ОТПРАВИТЕЛЯ
 int indexSender = 0;
 
@@ -50,9 +50,9 @@ async Task WaitIncomingConnectionsAsync(TcpListener listen)
         TcpClient client = await listen.AcceptTcpClientAsync();
 
         //добавляем клиента в список клиентов
-        lock (Clients)
+        lock (clients)
         {
-            Clients.Add(client);
+            clients.Add(client);
         }
         Console.WriteLine($"Подключение с {client.Client.RemoteEndPoint} установлено.");
     }
@@ -84,15 +84,15 @@ async Task ServeClients()
         //буффер
         byte[] buffer = new byte[0];
         //количество клиентов доступных для отправки
-        if (Clients.Count > 0)
+        if (clients.Count > 0)
         {
-            for (int i = 0; i < Clients.Count; i++)
+            for (int i = 0; i < clients.Count; i++)
             {
                 //если клиент доступен для receive
-                if (Clients[i].Available > 0)
+                if (clients[i].Available > 0)
                 {
                     //читаем его данные
-                    buffer = await BufferedReadBlock(Clients[i].GetStream());
+                    buffer = await BufferedReadBlock(clients[i].GetStream());
                     //переводим в строку
                     string str = Encoding.UTF8.GetString(buffer);
                     //забрали индекс отправителя
@@ -104,14 +104,14 @@ async Task ServeClients()
         //если что-то отправлено
         if (buffer.Length > 0)
         {
-                for (int i = 0; i < Clients.Count; i++)
+                for (int i = 0; i < clients.Count; i++)
                 {
                     //отправить всем, кроме отправляющего
                     if (i != indexSender)
                     {
                         //получить поток и отправить информацию
-                        await Clients[i].GetStream().WriteAsync(BitConverter.GetBytes(buffer.Length));
-                        await Clients[i].GetStream().WriteAsync(buffer, 0, buffer.Length);
+                        await clients[i].GetStream().WriteAsync(BitConverter.GetBytes(buffer.Length));
+                        await clients[i].GetStream().WriteAsync(buffer, 0, buffer.Length);
                     }
                 }
         }
